@@ -32,6 +32,26 @@ def create_student(db: Session, payload: schemas.StudentCreate) -> models.Studen
     db.refresh(student)
     return student
 
+def delete_student(db: Session, student_id: int) -> bool:
+    student = get_student(db, student_id)
+    if student is None:
+        return False
+    db.delete(student)
+    db.commit()
+    return True
+
+def update_student(db: Session, student_id: int, payload:schemas.StudentUpdate,) -> Optional[models.Student]:
+    student = get_student(db, student_id)
+    if student is None:
+        return None
+    # exclude_unset=True is the KEY idea - we only get the fields
+    # the user actually sent, not the ones that defaulted to None
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(student, field, value)
+    db.commit()
+    db.refresh(student)
+    return student
+
 
 # ---- Subjects --------------------------------------------------------------
 

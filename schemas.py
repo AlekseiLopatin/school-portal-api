@@ -30,7 +30,12 @@ class StudentRead(StudentBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class StudentUpdate(BaseModel):
+    """Partial update, every field optional."""
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    grade_level: Optional[str] = Field(None, min_length=1, max_length=10)
 
+    
 # ---- Subject ---------------------------------------------------------------
 
 class SubjectBase(BaseModel):

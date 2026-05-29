@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from database import Base, engine
 from routers import grades, students, subjects
+from fastapi.middleware.cors import CORSMiddleware
 
 # Create database tables on startup.
 # For production, replace this with Alembic migrations.
@@ -24,6 +25,17 @@ app = FastAPI(
     version="0.1.0",
 )
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",   # Vite dev server (default)
+        "http://localhost:3000",   # Common alt (Next.js, CRA)
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/", tags=["health"])
 async def root():

@@ -58,3 +58,25 @@ async def student_summary(
             detail=f"Student {student_id} not found",
         )
     return summary
+
+@router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_student(student_id: int, db: Session = Depends(get_db)):
+    """Delete a student by id."""
+    deleted = crud.delete_student(db, student_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Student {student_id} not found",
+        )
+    return None #204 means "Success, no body"
+
+@router.patch("/{student_id}", response_model=schemas.StudentRead)
+async def update_student(student_id: int, payload: schemas.StudentUpdate, db: Session = Depends(get_db),):
+    """Partial update of a student - send only the fields you want to change."""
+    updated = crud.update_student(db, student_id, payload)
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Student {student_id} not found",
+        )
+    return updated
