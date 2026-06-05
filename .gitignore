@@ -3,3 +3,4 @@ __pycache/
 *.pyc
 .env
 *.db
+school_portal.db
