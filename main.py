@@ -31,6 +31,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",   # Vite dev server (default)
         "http://localhost:3000",   # Common alt (Next.js, CRA)
+        "https://school-portal-frontend-iota.vercel.app"   
     ],
     allow_credentials=True,
     allow_methods=["*"],
