@@ -31,10 +31,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",   # Vite dev server (default)
         "http://localhost:3000",   # Common alt (Next.js, CRA)
-        "https://school-portal-frontend-iota.vercel.app"  
-        "https://school-portal-frontend-git-master-aleksei-lopatin-s-projects.vercel.app"
-        "https://school-portal-frontend-5rldlzfjv-aleksei-lopatin-s-projects.vercel.app"
-        "https://gradebook.alekseilopatin.com" 
+        "https://school-portal-frontend-iota.vercel.app",  
+        "https://school-portal-frontend-git-master-aleksei-lopatin-s-projects.vercel.app",
+        "https://school-portal-frontend-5rldlzfjv-aleksei-lopatin-s-projects.vercel.app",
+        "https://gradebook.alekseilopatin.com", 
     ],
     allow_credentials=True,
     allow_methods=["*"],
