@@ -6,7 +6,7 @@ Three tables for the Mini-Gradebook:
     - Subject  : what subjects exist (Math, English, etc.)
     - Grade    : a single score for one student, one subject, one semester
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
@@ -43,7 +43,7 @@ class Grade(Base):
     subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=False)
     score = Column(Float, nullable=False)            # 0.0 to 100.0
     semester = Column(String, nullable=False)        # e.g. "2026-S1"
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     student = relationship("Student", back_populates="grades")
     subject = relationship("Subject", back_populates="grades")
