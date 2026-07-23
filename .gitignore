@@ -1,6 +1,9 @@
 .venv/
-__pycache/
+__pycache__/
 *.pyc
 .env
 *.db
 school_portal.db
+node_modules/
+package-lock.json
+.pytest_cache/

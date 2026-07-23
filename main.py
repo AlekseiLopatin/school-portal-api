@@ -8,7 +8,7 @@ React-plus-FastAPI stack hands-on.
 from fastapi import FastAPI
 
 from database import Base, engine
-from routers import grades, students, subjects
+from routers import auth, grades, students, subjects
 from fastapi.middleware.cors import CORSMiddleware
 
 # Create database tables on startup.
@@ -52,6 +52,7 @@ async def health_check():
 
 
 # Register routers
+app.include_router(auth.router)
 app.include_router(students.router)
 app.include_router(subjects.router)
 app.include_router(grades.router)

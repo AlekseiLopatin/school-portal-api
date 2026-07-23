@@ -86,3 +86,20 @@ class StudentSummary(BaseModel):
     student_name: str
     semester: Optional[str] = None
     subjects: list[SubjectAverage]
+
+
+# ---- Auth --------------------------------------------------------------
+
+class UserCreate(BaseModel):
+    """Internal use only (seeding) — there is no public registration endpoint."""
+    username: str = Field(..., min_length=1, max_length=100)
+    password: str = Field(..., min_length=8, max_length=200)
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None

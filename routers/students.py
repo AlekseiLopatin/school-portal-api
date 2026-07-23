@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 import crud
+import models
 import schemas
+from auth import get_current_user
 from database import get_db
 
 router = APIRouter(prefix="/students", tags=["students"])
@@ -23,8 +25,9 @@ async def list_students(db: Session = Depends(get_db)):
 async def create_student(
     payload: schemas.StudentCreate,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
-    """Create a new student."""
+    """Create a new student. Requires authentication."""
     return crud.create_student(db, payload)
 
 
@@ -60,8 +63,12 @@ async def student_summary(
     return summary
 
 @router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_student(student_id: int, db: Session = Depends(get_db)):
-    """Delete a student by id."""
+async def delete_student(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Delete a student by id. Requires authentication."""
     deleted = crud.delete_student(db, student_id)
     if not deleted:
         raise HTTPException(
@@ -71,8 +78,13 @@ async def delete_student(student_id: int, db: Session = Depends(get_db)):
     return None #204 means "Success, no body"
 
 @router.patch("/{student_id}", response_model=schemas.StudentRead)
-async def update_student(student_id: int, payload: schemas.StudentUpdate, db: Session = Depends(get_db),):
-    """Partial update of a student - send only the fields you want to change."""
+async def update_student(
+    student_id: int,
+    payload: schemas.StudentUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Partial update of a student - send only the fields you want to change. Requires authentication."""
     updated = crud.update_student(db, student_id, payload)
     if updated is None:
         raise HTTPException(

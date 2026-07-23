@@ -23,8 +23,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import models
+from auth import hash_password
 from database import Base, get_db
 from main import app
+
+TEST_USERNAME = "testadmin"
+TEST_PASSWORD = "supersecret123"
 
 
 @pytest.fixture
@@ -71,3 +76,35 @@ def client(db_engine, db_session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def test_user(db_session):
+    """A seeded user for tests that need to authenticate."""
+    user = models.User(
+        username=TEST_USERNAME, hashed_password=hash_password(TEST_PASSWORD)
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def test_credentials():
+    """Plaintext username/password matching the `test_user` fixture, for login tests."""
+    return {"username": TEST_USERNAME, "password": TEST_PASSWORD}
+
+
+@pytest.fixture
+def auth_headers(client, test_user, test_credentials):
+    """
+    Logs in as the seeded test user via the real /auth/login endpoint and
+    returns headers ready to pass to a protected route:
+
+        client.post("/students", json=..., headers=auth_headers)
+    """
+    response = client.post("/auth/login", data=test_credentials)
+    assert response.status_code == 200, response.text
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

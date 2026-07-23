@@ -3,6 +3,7 @@
 
 <p align="center">
   <a href="https://gradebook.alekseilopatin.com"><img alt="Live frontend" src="https://img.shields.io/badge/Frontend_live-gradebook.alekseilopatin.com-2962FF?style=flat-square&logo=googlechrome&logoColor=white"></a>
+  <a href="https://github.com/AlekseiLopatin/school-portal-api/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/AlekseiLopatin/school-portal-api/actions/workflows/tests.yml/badge.svg"></a>
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white">
   <img alt="SQLAlchemy" src="https://img.shields.io/badge/SQLAlchemy-2-D71F00?style=flat-square">
@@ -22,27 +23,32 @@ Powers the React frontend at **[gradebook.alekseilopatin.com](https://gradebook.
 
 ## Features
 
+- **JWT authentication** — `/auth/login` issues a bearer token against a hashed password in the `users` table; all write routes require it
 - **Type-hint-driven REST API** — function signatures *are* the API contract; Swagger docs at `/docs` are generated automatically
 - **Pydantic v2 schemas** — request and response validation at the boundary, separate Create / Read / Update shapes
-- **SQLAlchemy 2.0 ORM** — three related tables (students, subjects, grades) with foreign keys and cascade rules
+- **SQLAlchemy 2.0 ORM** — four related tables (students, subjects, grades, users) with foreign keys and cascade rules
 - **Dependency-injected DB sessions** — `get_db()` opens a session per request and closes it after the response, even on exceptions
 - **Computed endpoints** — e.g. `/students/{id}/summary` returns per-subject averages via a single GROUP BY query, no N+1
 - **Environment-aware database** — SQLite for local dev (zero setup), managed PostgreSQL on Railway in production; auto-detected at runtime
+- **CI on every push** — GitHub Actions runs the full pytest suite (unit + integration + auth) on push/PR to `main`
 
 ## Endpoints
 
-| Method | Path | What it does |
-|---|---|---|
-| `GET` | `/students` | List all students |
-| `POST` | `/students` | Create a student |
-| `GET` | `/students/{id}` | One student |
-| `PATCH` | `/students/{id}` | Partial update — only fields you send change |
-| `DELETE` | `/students/{id}` | Delete (cascades to grades) |
-| `GET` | `/students/{id}/summary?semester=` | Average score per subject for a student |
-| `GET` | `/subjects` | List all subjects |
-| `POST` | `/subjects` | Create a subject |
-| `GET` | `/grades?student_id=&subject_id=&semester=` | List grades, filterable |
-| `POST` | `/grades` | Record a grade |
+Write routes (`POST` / `PATCH` / `DELETE`) require `Authorization: Bearer <token>`. Read routes (`GET`) are public.
+
+| Method | Path | Auth | What it does |
+|---|---|---|---|
+| `POST` | `/auth/login` | — | Exchange username + password for a JWT |
+| `GET` | `/students` | public | List all students |
+| `POST` | `/students` | 🔒 | Create a student |
+| `GET` | `/students/{id}` | public | One student |
+| `PATCH` | `/students/{id}` | 🔒 | Partial update — only fields you send change |
+| `DELETE` | `/students/{id}` | 🔒 | Delete (cascades to grades) |
+| `GET` | `/students/{id}/summary?semester=` | public | Average score per subject for a student |
+| `GET` | `/subjects` | public | List all subjects |
+| `POST` | `/subjects` | 🔒 | Create a subject |
+| `GET` | `/grades?student_id=&subject_id=&semester=` | public | List grades, filterable |
+| `POST` | `/grades` | 🔒 | Record a grade |
 
 ## Tech stack
 
@@ -52,9 +58,11 @@ Powers the React frontend at **[gradebook.alekseilopatin.com](https://gradebook.
 | Language | Python 3.11+ |
 | ORM | SQLAlchemy 2.0 |
 | Validation | Pydantic v2 |
+| Auth | JWT (`python-jose`) + bcrypt password hashing (`passlib`) |
 | Database (dev) | SQLite — single file, zero setup |
 | Database (prod) | PostgreSQL — managed by Railway |
 | API docs | Swagger UI (built into FastAPI) at `/docs` |
+| CI | GitHub Actions — pytest on every push/PR to `main` |
 | Hosting | Railway |
 
 ## Quick start
@@ -68,23 +76,30 @@ source .venv/bin/activate            # macOS / Linux
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Run the dev server
+# 3. Seed the one admin account (there is no public registration endpoint)
+ADMIN_USERNAME=youruser ADMIN_PASSWORD='choose-a-real-one' python seed_admin.py
+
+# 4. Run the dev server
 uvicorn main:app --reload
 
-# 4. Open the interactive API docs
+# 5. Open the interactive API docs
 # http://localhost:8000/docs
+
+# 6. Run the test suite
+pytest -v
 ```
 
-For production, set the `DATABASE_URL` environment variable to a PostgreSQL connection string. The app auto-detects sqlite vs postgres and adjusts engine arguments accordingly. CORS allowed origins are configured in `main.py` — include your frontend's deployment URL there.
+For production, set the `DATABASE_URL` environment variable to a PostgreSQL connection string and `SECRET_KEY` to a long random value (the JWT signing key — the fallback in `auth.py` is dev-only and insecure). The app auto-detects sqlite vs postgres and adjusts engine arguments accordingly. CORS allowed origins are configured in `main.py` — include your frontend's deployment URL there.
 
 ## Data model
 
-Three tables, deliberately small:
+Four tables, deliberately small:
 
 ```sql
 students:  id, name, grade_level
 subjects:  id, name (unique)
 grades:    id, student_id (FK), subject_id (FK), score (0–100), semester, created_at
+users:     id, username (unique), hashed_password
 ```
 
 `Base.metadata.create_all(bind=engine)` creates the tables on startup. For a larger project, swap this for Alembic migrations.
@@ -98,10 +113,15 @@ grades:    id, student_id (FK), subject_id (FK), score (0–100), semester, crea
 ├── models.py            # SQLAlchemy ORM models
 ├── schemas.py           # Pydantic schemas — Base / Create / Read patterns
 ├── crud.py              # Database operations — the service layer
+├── auth.py              # Password hashing, JWT issuance/decode, get_current_user
+├── seed_admin.py        # One-time script to create the admin user
 ├── routers/
+│   ├── auth.py          # /auth/login
 │   ├── students.py      # /students endpoints
 │   ├── subjects.py      # /subjects endpoints
 │   └── grades.py        # /grades endpoints
+├── tests/               # pytest suite — unit (crud), integration (routes), auth
+├── .github/workflows/   # CI: pytest on every push/PR
 ├── requirements.txt
 ├── Procfile             # Railway start command
 └── README.md
@@ -114,7 +134,7 @@ grades:    id, student_id (FK), subject_id (FK), score (0–100), semester, crea
 
 ## Roadmap
 
-- [ ] Auth — JWT-based authentication and protected routes
+- [x] Auth — JWT-based authentication and protected routes
 - [ ] Alembic migrations (replace `Base.metadata.create_all`)
 - [ ] Pagination on list endpoints
 - [ ] Background tasks — e.g. recompute averages on grade write

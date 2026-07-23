@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 import crud
+import models
 import schemas
+from auth import get_current_user
 from database import get_db
 
 router = APIRouter(prefix="/grades", tags=["grades"])
@@ -36,6 +38,7 @@ async def list_grades(
 async def create_grade(
     payload: schemas.GradeCreate,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ):
-    """Record a new grade for a student in a subject in a semester."""
+    """Record a new grade for a student in a subject in a semester. Requires authentication."""
     return crud.create_grade(db, payload)

@@ -1,10 +1,11 @@
 """
 SQLAlchemy ORM models — the database tables.
 
-Three tables for the Mini-Gradebook:
+Four tables for the Mini-Gradebook:
     - Student  : who you are tracking
     - Subject  : what subjects exist (Math, English, etc.)
     - Grade    : a single score for one student, one subject, one semester
+    - User     : an authenticated account allowed to write to the API
 """
 from datetime import datetime, timezone
 
@@ -47,3 +48,11 @@ class Grade(Base):
 
     student = relationship("Student", back_populates="grades")
     subject = relationship("Subject", back_populates="grades")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, nullable=False, unique=True, index=True)
+    hashed_password = Column(String, nullable=False)
